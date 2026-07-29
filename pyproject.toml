@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "urdf-pet"
+version = "0.0.1"
+description = "一个用 URDF 关节树当身体的桌面宠物"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+# 核心依赖:解析 URDF + 运动学 + 物理,不含任何 GUI/渲染
+dependencies = [
+    "numpy>=1.24",
+    "trimesh>=4.0",
+    "yourdfpy>=0.0.56",
+]
+
+[project.optional-dependencies]
+# 渲染 + 桌面壳(阶段 0.5 / 2 才需要,CI 不装)
+desktop = [
+    "PySide6>=6.6",
+    "pyvista>=0.43",
+    "pyvistaqt>=0.11",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/urdf_pet"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
