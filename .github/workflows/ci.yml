@@ -48,12 +48,42 @@ jobs:
           cache: pip
 
       # 只装核心 + dev 依赖,不装 [desktop](PySide6 / PyVista)。
-      # 运动学与行为层不依赖渲染,可在无显示器的 runner 上直接跑;
-      # 等阶段 2 真需要测 GUI 时,再加 xvfb 的独立 job。
+      # 运动学层不依赖渲染,在多版本矩阵上跑得又快又稳;
+      # 渲染与 Qt 交给下面单独的 visual job(只跑一个 Python 版本)。
       - name: Install package
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
-      - name: Run tests
-        run: pytest -v
+      - name: Run L1 tests
+        run: pytest tests/test_kinematics.py -v
+
+  visual:
+    name: Render + Qt (L2/L3)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # L2 的离屏渲染理论上不需要 X,但 L3 的 QtInteractor 需要:
+      # QT_QPA_PLATFORM=offscreen 下 VTK 仍会去连 X 并拿到无效窗口句柄,直接崩。
+      # 所以整个 job 跑在 xvfb 里。libxcb-cursor0 是 PySide6 6.5+ 的硬性依赖。
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 \
+            libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
+            libgl1 libegl1 libglx-mesa0
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,desktop]"
+
+      - name: Run L2 + L3 tests
+        run: xvfb-run -a --server-args="-screen 0 1280x1024x24" pytest tests -v

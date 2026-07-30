@@ -1,0 +1,278 @@
+<?xml version="1.0"?>
+<!--
+  blob —— 阶段 0 的手写小生物。
+  全部使用 URDF 原生几何体(sphere / cylinder / box),不引用任何外部 mesh 文件,
+  以此绕开 STL/DAE 加载(见 plan.md 第 7 节)。
+
+  单位:米。整只约 0.30 m 高,坐标原点在身体球心。
+  9 个 revolute 关节:脖子 2(pan/tilt)、手臂 4(肩/肘 ×2)、腿 2(髋 ×2)、尾巴 1。
+-->
+<robot name="blob">
+
+  <material name="body">  <color rgba="0.45 0.70 0.95 1.0"/></material>
+  <material name="limb">  <color rgba="0.35 0.60 0.88 1.0"/></material>
+  <material name="accent"><color rgba="0.98 0.78 0.35 1.0"/></material>
+  <material name="eye">   <color rgba="0.12 0.14 0.20 1.0"/></material>
+
+  <!-- ==================== 躯干 ==================== -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0"/>
+      <geometry><sphere radius="0.10"/></geometry>
+      <material name="body"/>
+    </visual>
+    <!-- 肚皮:稍微凸出的浅色球,让正面有层次 -->
+    <visual>
+      <origin xyz="0.055 0 -0.015"/>
+      <geometry><sphere radius="0.062"/></geometry>
+      <material name="accent"/>
+    </visual>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.004" ixy="0" ixz="0" iyy="0.004" iyz="0" izz="0.004"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== 头 ==================== -->
+  <!-- neck_link 是只有一个自由度的中间连杆,没有视觉体,用来把 pan/tilt 拆成两个关节 -->
+  <joint name="neck_pan" type="revolute">
+    <parent link="base_link"/>
+    <child  link="neck_link"/>
+    <origin xyz="0 0 0.082"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.20" upper="1.20" effort="5" velocity="4"/>
+  </joint>
+  <link name="neck_link">
+    <inertial>
+      <mass value="0.02"/>
+      <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/>
+    </inertial>
+  </link>
+
+  <joint name="neck_tilt" type="revolute">
+    <parent link="neck_link"/>
+    <child  link="head_link"/>
+    <origin xyz="0 0 0.018"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.60" upper="0.60" effort="5" velocity="4"/>
+  </joint>
+  <link name="head_link">
+    <visual>
+      <origin xyz="0 0 0.052"/>
+      <geometry><sphere radius="0.072"/></geometry>
+      <material name="body"/>
+    </visual>
+    <!-- 双眼:+x 为正面 -->
+    <visual>
+      <origin xyz="0.060 0.030 0.068"/>
+      <geometry><sphere radius="0.018"/></geometry>
+      <material name="eye"/>
+    </visual>
+    <visual>
+      <origin xyz="0.060 -0.030 0.068"/>
+      <geometry><sphere radius="0.018"/></geometry>
+      <material name="eye"/>
+    </visual>
+    <!-- 双耳:短圆柱,朝斜上外方 -->
+    <visual>
+      <origin xyz="-0.012 0.052 0.108" rpy="-0.55 0 0"/>
+      <geometry><cylinder radius="0.016" length="0.050"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="-0.025 0.065 0.128"/>
+      <geometry><sphere radius="0.019"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="-0.012 -0.052 0.108" rpy="0.55 0 0"/>
+      <geometry><cylinder radius="0.016" length="0.050"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="-0.025 -0.065 0.128"/>
+      <geometry><sphere radius="0.019"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0.052"/>
+      <mass value="0.25"/>
+      <inertia ixx="5e-4" ixy="0" ixz="0" iyy="5e-4" iyz="0" izz="5e-4"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== 左臂 ==================== -->
+  <joint name="shoulder_l" type="revolute">
+    <parent link="base_link"/>
+    <child  link="upperarm_l"/>
+    <origin xyz="0 0.104 0.030" rpy="0.40 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.00" upper="2.00" effort="5" velocity="6"/>
+  </joint>
+  <link name="upperarm_l">
+    <visual>
+      <origin xyz="0 0 -0.035"/>
+      <geometry><cylinder radius="0.018" length="0.070"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 -0.035"/>
+      <mass value="0.08"/>
+      <inertia ixx="5e-5" ixy="0" ixz="0" iyy="5e-5" iyz="0" izz="2e-5"/>
+    </inertial>
+  </link>
+
+  <joint name="elbow_l" type="revolute">
+    <parent link="upperarm_l"/>
+    <child  link="forearm_l"/>
+    <origin xyz="0 0 -0.070"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.20" upper="0.20" effort="5" velocity="6"/>
+  </joint>
+  <link name="forearm_l">
+    <visual>
+      <origin xyz="0 0 -0.030"/>
+      <geometry><cylinder radius="0.015" length="0.060"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 -0.066"/>
+      <geometry><sphere radius="0.024"/></geometry>
+      <material name="accent"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 -0.040"/>
+      <mass value="0.06"/>
+      <inertia ixx="4e-5" ixy="0" ixz="0" iyy="4e-5" iyz="0" izz="1e-5"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== 右臂 ==================== -->
+  <joint name="shoulder_r" type="revolute">
+    <parent link="base_link"/>
+    <child  link="upperarm_r"/>
+    <origin xyz="0 -0.104 0.030" rpy="-0.40 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.00" upper="2.00" effort="5" velocity="6"/>
+  </joint>
+  <link name="upperarm_r">
+    <visual>
+      <origin xyz="0 0 -0.035"/>
+      <geometry><cylinder radius="0.018" length="0.070"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 -0.035"/>
+      <mass value="0.08"/>
+      <inertia ixx="5e-5" ixy="0" ixz="0" iyy="5e-5" iyz="0" izz="2e-5"/>
+    </inertial>
+  </link>
+
+  <joint name="elbow_r" type="revolute">
+    <parent link="upperarm_r"/>
+    <child  link="forearm_r"/>
+    <origin xyz="0 0 -0.070"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.20" upper="0.20" effort="5" velocity="6"/>
+  </joint>
+  <link name="forearm_r">
+    <visual>
+      <origin xyz="0 0 -0.030"/>
+      <geometry><cylinder radius="0.015" length="0.060"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 -0.066"/>
+      <geometry><sphere radius="0.024"/></geometry>
+      <material name="accent"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 -0.040"/>
+      <mass value="0.06"/>
+      <inertia ixx="4e-5" ixy="0" ixz="0" iyy="4e-5" iyz="0" izz="1e-5"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== 双腿 ==================== -->
+  <joint name="hip_l" type="revolute">
+    <parent link="base_link"/>
+    <child  link="thigh_l"/>
+    <origin xyz="0 0.050 -0.084" rpy="0.15 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.20" upper="1.20" effort="5" velocity="6"/>
+  </joint>
+  <link name="thigh_l">
+    <visual>
+      <origin xyz="0 0 -0.030"/>
+      <geometry><cylinder radius="0.020" length="0.060"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="0.008 0 -0.066"/>
+      <geometry><sphere radius="0.028"/></geometry>
+      <material name="accent"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 -0.040"/>
+      <mass value="0.10"/>
+      <inertia ixx="6e-5" ixy="0" ixz="0" iyy="6e-5" iyz="0" izz="2e-5"/>
+    </inertial>
+  </link>
+
+  <joint name="hip_r" type="revolute">
+    <parent link="base_link"/>
+    <child  link="thigh_r"/>
+    <origin xyz="0 -0.050 -0.084" rpy="-0.15 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.20" upper="1.20" effort="5" velocity="6"/>
+  </joint>
+  <link name="thigh_r">
+    <visual>
+      <origin xyz="0 0 -0.030"/>
+      <geometry><cylinder radius="0.020" length="0.060"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="0.008 0 -0.066"/>
+      <geometry><sphere radius="0.028"/></geometry>
+      <material name="accent"/>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 -0.040"/>
+      <mass value="0.10"/>
+      <inertia ixx="6e-5" ixy="0" ixz="0" iyy="6e-5" iyz="0" izz="2e-5"/>
+    </inertial>
+  </link>
+
+  <!-- ==================== 尾巴 ==================== -->
+  <joint name="tail" type="revolute">
+    <parent link="base_link"/>
+    <child  link="tail_link"/>
+    <origin xyz="-0.082 0 0.010"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.00" upper="1.00" effort="2" velocity="8"/>
+  </joint>
+  <!--
+    尾巴朝后上方 45° 翘起,而不是水平向后。
+    水平向后时它整根被躯干挡住,从默认机位完全看不见——摆尾这个动作也就白做了。
+    -0.785 rad 绕 y 轴:圆柱自身的 +z 轴转到 (-0.707, 0, 0.707) 方向。
+  -->
+  <link name="tail_link">
+    <visual>
+      <origin xyz="-0.030 0 0.030" rpy="0 -0.785 0"/>
+      <geometry><cylinder radius="0.013" length="0.085"/></geometry>
+      <material name="limb"/>
+    </visual>
+    <visual>
+      <origin xyz="-0.062 0 0.062"/>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="accent"/>
+    </visual>
+    <inertial>
+      <origin xyz="-0.040 0 0.040"/>
+      <mass value="0.04"/>
+      <inertia ixx="2e-5" ixy="0" ixz="0" iyy="2e-5" iyz="0" izz="2e-5"/>
+    </inertial>
+  </link>
+
+</robot>

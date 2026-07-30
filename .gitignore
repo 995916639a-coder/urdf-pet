@@ -16,3 +16,4 @@ venv/
 rust_ext/target/
 *.so
 *.pyd
+screenshots/
